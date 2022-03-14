@@ -1,24 +1,44 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { ScrollView, StyleSheet } from 'react-native'
 import { FAB } from 'react-native-paper'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 
 import NoteItem from './NoteItem'
 
 const Notes = ({ navigation }) => {
-    const [notes, setNotes] = useState([
-        { id: 1, title: 'jedan', content: 'broj jedan' },
-        { id: 2, title: 'jedan', content: 'broj jedan' },
-        { id: 3, title: 'jedan', content: 'broj jedan' },
-        { id: 4, title: 'jedan', content: 'broj jedan' },
-        { id: 5, title: 'jedan', content: 'broj jedan' },
-        { id: 6, title: 'jedan', content: 'broj jedan' },
-        { id: 7, title: 'jedan', content: 'broj jedan' },
-        { id: 8, title: 'jedan', content: 'broj jedan' },
-        { id: 9, title: 'jedan', content: 'broj jedan' },
-    ])
+    const [notes, setNotes] = useState([])
+
+    async function saveData() {
+        try {
+            const data = JSON.stringify({ notes })
+            await AsyncStorage.setItem('notes', data)
+        } catch {}
+    }
+
+    async function getData() {
+        try {
+            const data = await AsyncStorage.getItem('notes')
+            if (data !== null) {
+                setNotes(JSON.parse(data).notes)
+            }
+        } catch {}
+    }
+
+    useEffect(() => {
+        getData()
+    }, [])
+
+    useEffect(() => {
+        saveData()
+    }, [notes, setNotes])
 
     function addNote(note) {
         setNotes([note, ...notes])
+    }
+
+    function updateNote(note) {
+        const { id } = note
+        setNotes(notes.map(n => n.id === id ? note : n))
     }
 
     return (
@@ -27,8 +47,9 @@ const Notes = ({ navigation }) => {
                 {notes.map(n =>
                     <NoteItem
                         key={n.id}
-                        title={n.title}
-                        content={n.content}
+                        note={n}
+                        navigation={navigation}
+                        updateNote={updateNote}
                     />)}
             </ScrollView>
             <FAB icon="plus" style={styles.fab} onPress={() => navigation.navigate('Edit Note', { addNote })} />
